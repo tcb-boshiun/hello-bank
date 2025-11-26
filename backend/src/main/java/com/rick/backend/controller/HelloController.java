@@ -1,6 +1,5 @@
 package com.rick.backend.controller;
 
-import com.rick.backend.facade.HelloFacade;
 import com.rick.backend.service.HelloService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
@@ -8,7 +7,7 @@ import org.springframework.web.bind.annotation.*;
 @RestController
 @RequestMapping("/api")
 @CrossOrigin(origins = "*")
-public class HelloController implements HelloFacade {
+public class HelloController {
 
     @Autowired
     private HelloService service;
