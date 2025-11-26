@@ -1,0 +1,34 @@
+name: A - Copilot Review Event
+
+on:
+  pull_request_review:
+    types: [submitted]
+
+jobs:
+  detect_copilot_review:
+    runs-on: ubuntu-latest
+    permissions:
+      pull-requests: read
+      contents: read
+
+    steps:
+      # 紀錄這次 review 的基本資訊（純 log，方便 debug）
+      - name: Log review info
+        run: |
+          echo "Reviewer login:  ${{ github.event.review.user.login }}"
+          echo "Review state:    ${{ github.event.review.state }}"
+          echo "PR number:       ${{ github.event.pull_request.number }}"
+          echo "PR title:        ${{ github.event.pull_request.title }}"
+          echo "PR url:          ${{ github.event.pull_request.html_url }}"
+
+      # 如果不是 Copilot，就直接結束（但仍視為成功）
+      - name: Skip if not Copilot
+        if: contains(github.event.review.user.login, 'copilot') == false
+        run: |
+          echo "This review is NOT from Copilot, nothing to do in Workflow A."
+          exit 0
+
+      # 是 Copilot 的 review，就印一句話，讓 workflow_run 可以接手
+      - name: Mark Copilot review handled
+        run: |
+          echo "This is a Copilot review. Workflow A completed successfully."

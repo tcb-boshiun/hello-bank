@@ -1,0 +1,150 @@
+name: B - Send Copilot Result to Power Automate
+
+on:
+  workflow_run:
+    workflows: ["A - Copilot Review Event"]  # 要跟 Workflow A 的 name 完全一致
+    types:
+      - completed
+
+jobs:
+  send_to_power_automate:
+    runs-on: ubuntu-latest
+
+    # 僅當 Workflow A 結論是 success 時才執行
+    if: ${{ github.event.workflow_run.conclusion == 'success' }}
+
+    permissions:
+      pull-requests: read
+      contents: read
+
+    env:
+      SYSTEM_ID: "SYS-001"
+      SUBMITTER_EMAIL: "-"
+      SUBMITTER_FULL_NAME: "tcb-boshiun"
+
+    steps:
+      # 1) Log workflow_run 基本資訊
+      - name: Log workflow_run info
+        run: |
+          echo "Triggered by workflow_run id: ${{ github.event.workflow_run.id }}"
+          echo "Workflow name:               ${{ github.event.workflow_run.name }}"
+          echo "Conclusion:                  ${{ github.event.workflow_run.conclusion }}"
+          echo "Attached PR count:           ${{ github.event.workflow_run.pull_requests.size }}"
+
+      # 2) 從 workflow_run 事件中取出 PR 編號與連結
+      - name: Get PR number from workflow_run
+        id: pr
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const prs = context.payload.workflow_run.pull_requests || [];
+            if (!prs.length) {
+              core.setFailed('No PR found in workflow_run payload.');
+              return;
+            }
+
+            const pr = prs[0];
+            core.info(`PR number: ${pr.number}`);
+            core.info(`PR url:    ${pr.html_url}`);
+
+            core.setOutput('number', String(pr.number));
+            core.setOutput('url', pr.html_url);
+
+      # 3) 查詢該 PR 最新的 Copilot review（不輪詢，因為這時候已經寫完）
+      - name: Fetch latest Copilot review
+        id: copilot
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const { owner, repo } = context.repo;
+            const prNumber = parseInt('${{ steps.pr.outputs.number }}', 10);
+
+            const { data: reviews } = await github.rest.pulls.listReviews({
+              owner,
+              repo,
+              pull_number: prNumber,
+              per_page: 50
+            });
+
+            // 從最新開始找 reviewer login 內含 "copilot" 的 review
+            const latestCopilot = reviews
+              .slice()
+              .reverse()
+              .find(r => (r.user?.login || '').toLowerCase().includes('copilot'));
+
+            if (!latestCopilot) {
+              core.setFailed('No Copilot review found on this PR.');
+              return;
+            }
+
+            core.info(`Found Copilot review: state=${latestCopilot.state}, url=${latestCopilot.html_url}`);
+            core.setOutput('state', latestCopilot.state);
+
+      # 4) 將 Copilot review 的狀態轉成 PASS / FAIL
+      - name: Decide PASS / FAIL
+        id: result
+        run: |
+          state="${{ steps.copilot.outputs.state }}"
+          echo "Copilot review state: $state"
+
+          # GitHub 的狀態通常是 APPROVED / CHANGES_REQUESTED / COMMENTED 等
+          if [ "$state" = "CHANGES_REQUESTED" ] || [ "$state" = "changes_requested" ]; then
+            AI_RESULT="FAIL"
+          else
+            AI_RESULT="PASS"
+          fi
+
+          echo "AIReviewResult: $AI_RESULT"
+          echo "ai_result=$AI_RESULT" >> $GITHUB_OUTPUT
+
+      # 5) 組成你指定格式的 JSON（只包含 PASS / FAIL，不傳內容）
+      - name: Build JSON payload
+        id: payload
+        run: |
+          payload=$(jq -n \
+            --arg mr_id   "${{ steps.pr.outputs.number }}" \
+            --arg sys_id  "${SYSTEM_ID}" \
+            --arg email   "${SUBMITTER_EMAIL}" \
+            --arg name    "${SUBMITTER_FULL_NAME}" \
+            --arg ai_res  "${{ steps.result.outputs.ai_result }}" \
+            --arg mr_link "${{ steps.pr.outputs.url }}" \
+            '{
+              MergeRequestID:    $mr_id,
+              SystemID:          $sys_id,
+              SubmitterEmail:    $email,
+              SubmitterFullName: $name,
+              AIReviewResult:    $ai_res,
+              MergeRequestLink:  $mr_link
+            }')
+
+          echo "JSON payload to Power Automate:"
+          echo "$payload"
+
+          # 存成檔案給下一步 curl 使用，避免引號問題
+          echo "$payload" > payload.json
+          echo "json=payload.json" >> $GITHUB_OUTPUT
+
+      # 6) 呼叫 Power Automate（用 secrets：URL + x-api-key）
+      - name: POST to Power Automate
+        env:
+          POWER_AUTOMATE_URL: ${{ secrets.POWER_AUTOMATE_URL }}
+          POWER_AUTOMATE_API_KEY: ${{ secrets.POWER_AUTOMATE_API_KEY }}
+        run: |
+          echo "Sending payload to Power Automate: $POWER_AUTOMATE_URL"
+
+          http_code=$(curl -sS -o response.txt -w "%{http_code}" \
+            -X POST "$POWER_AUTOMATE_URL" \
+            -H "Content-Type: application/json" \
+            -H "x-api-key: $POWER_AUTOMATE_API_KEY" \
+            -d @${{ steps.payload.outputs.json }})
+
+          echo "HTTP status code: $http_code"
+          echo "Response body:"
+          cat response.txt || true
+
+          if [ "$http_code" -ge 400 ]; then
+            echo "Power Automate call failed with HTTP $http_code"
+            exit 1
+          fi
+
+          echo "Power Automate call success."
