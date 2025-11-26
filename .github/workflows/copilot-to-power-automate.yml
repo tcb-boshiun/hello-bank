@@ -1,49 +1,153 @@
-name: Send Copilot review to Power Automate
+name: Notify Power Automate when Copilot review is done
 
 on:
-  pull_request_review:
-    types: [submitted]
+  pull_request:
+    types:
+      - opened
+      - reopened
+      - synchronize
+      - ready_for_review
 
 jobs:
-  send_to_power_automate:
+  notify_power_automate:
     runs-on: ubuntu-latest
 
-    # 只在 reviewer 是 Copilot 時觸發（第一次可先註解掉，觀察 event payload）
-    # if: github.event.review.user.login == 'github-copilot'
+    env:
+      SYSTEM_ID: "SYS-001"
+      SUBMITTER_EMAIL: "-"
+      SUBMITTER_FULL_NAME: "tcb-boshiun"
 
     steps:
-      - name: Build JSON payload
-        id: build
+      # 1) 基本資訊紀錄，方便除錯
+      - name: Log PR basic info
         run: |
-          # 這裡先用你的格式，把 Copilot review 內容放進 AIReviewResult
+          echo "Repo:           ${{ github.repository }}"
+          echo "PR number:      ${{ github.event.pull_request.number }}"
+          echo "PR title:       ${{ github.event.pull_request.title }}"
+          echo "PR author:      ${{ github.event.pull_request.user.login }}"
+          echo "PR HTML URL:    ${{ github.event.pull_request.html_url }}"
+          echo "Action:         ${{ github.event.action }}"
+
+      # 2) 輪詢 GitHub，找「最新的 Copilot review」
+      - name: Poll latest Copilot review
+        id: copilot
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const core = require('@actions/core');
+            const { owner, repo } = context.repo;
+            const prNumber = context.issue.number;
+
+            const maxAttempts = 8;      // 最多輪詢 8 次
+            const delayMs     = 15000;  // 每次間隔 15 秒
+            let latestCopilot = null;
+
+            core.info(`Start polling Copilot review for PR #${prNumber} ...`);
+
+            for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+              const { data: reviews } = await github.rest.pulls.listReviews({
+                owner,
+                repo,
+                pull_number: prNumber,
+                per_page: 50
+              });
+
+              latestCopilot = reviews
+                .slice()
+                .reverse()
+                .find(r => (r.user?.login || '').toLowerCase().includes('copilot'));
+
+              if (latestCopilot) {
+                core.info(`Found Copilot review at attempt ${attempt}.`);
+                core.info(`Reviewer: ${latestCopilot.user.login}`);
+                core.info(`State:    ${latestCopilot.state}`);
+                core.info(`URL:      ${latestCopilot.html_url}`);
+                break;
+              }
+
+              core.info(`Attempt ${attempt}: No Copilot review yet, wait ${delayMs} ms...`);
+              await new Promise(resolve => setTimeout(resolve, delayMs));
+            }
+
+            if (!latestCopilot) {
+              core.warning('No Copilot review found after polling. Will skip Power Automate call.');
+              core.setOutput('found', 'false');
+              return;
+            }
+
+            core.setOutput('found', 'true');
+            core.setOutput('review_state', latestCopilot.state);
+            core.setOutput('review_url', latestCopilot.html_url);
+
+      # 3) 如果沒找到 Copilot review，就直接結束（成功但不通知）
+      - name: Skip if no Copilot review
+        if: steps.copilot.outputs.found != 'true'
+        run: |
+          echo "No Copilot review detected. Nothing to send to Power Automate."
+          exit 0
+
+      # 4) 決定 PASS / FAIL（簡單規則：changes_requested = FAIL，其它 = PASS）
+      - name: Decide PASS / FAIL
+        id: result
+        run: |
+          state="${{ steps.copilot.outputs.review_state }}"
+          echo "Copilot review state: $state"
+
+          if [ "$state" = "CHANGES_REQUESTED" ] || [ "$state" = "changes_requested" ]; then
+            AI_RESULT="FAIL"
+          else
+            AI_RESULT="PASS"
+          fi
+
+          echo "AIReviewResult = $AI_RESULT"
+          echo "ai_result=$AI_RESULT" >> $GITHUB_OUTPUT
+
+      # 5) 組成你指定格式的 JSON
+      - name: Build payload
+        id: payload
+        run: |
           payload=$(jq -n \
-            --arg mr_id "${{ github.event.pull_request.number }}" \
-            --arg sys_id "hello-bank" \
-            --arg email "happy0520@tcb-bank.com.tw" \
-            --arg fullname "Tcb-Boshiun" \
-            --arg ai_result "${{ github.event.review.body }}" \
+            --arg mr_id   "${{ github.event.pull_request.number }}" \
+            --arg sys_id  "${SYSTEM_ID}" \
+            --arg email   "${SUBMITTER_EMAIL}" \
+            --arg name    "${SUBMITTER_FULL_NAME}" \
+            --arg ai_res  "${{ steps.result.outputs.ai_result }}" \
             --arg mr_link "${{ github.event.pull_request.html_url }}" \
             '{
-              MergeRequestID: $mr_id,
-              SystemID:       $sys_id,
-              SubmitterEmail: $email,
-              SubmitterFullName: $fullname,
-              AIReviewResult: "test",
-              MergeRequestLink: $mr_link
+              MergeRequestID:    $mr_id,
+              SystemID:          $sys_id,
+              SubmitterEmail:    $email,
+              SubmitterFullName: $name,
+              AIReviewResult:    $ai_res,
+              MergeRequestLink:  $mr_link
             }')
 
-          echo "payload=$payload" >> $GITHUB_OUTPUT
+          echo "JSON payload to Power Automate:"
+          echo "$payload"
 
+          echo "json=$payload" >> $GITHUB_OUTPUT
+
+      # 6) 呼叫 Power Automate（不傳內容，只傳 PASS / FAIL 與連結）
       - name: POST to Power Automate
         env:
           POWER_AUTOMATE_URL: ${{ secrets.POWER_AUTOMATE_URL }}
           POWER_AUTOMATE_API_KEY: ${{ secrets.POWER_AUTOMATE_API_KEY }}
         run: |
-          echo "Sending payload to Power Automate..."
-          echo '${{ steps.build.outputs.payload }}'
+          echo "Sending payload to Power Automate: $POWER_AUTOMATE_URL"
 
-          curl -sS -X POST "$POWER_AUTOMATE_URL" \
+          http_code=$(curl -sS -o response.txt -w "%{http_code}" \
+            -X POST "$POWER_AUTOMATE_URL" \
             -H "Content-Type: application/json" \
             -H "x-api-key: $POWER_AUTOMATE_API_KEY" \
-            -d '${{ steps.build.outputs.payload }}'
+            -d '${{ steps.payload.outputs.json }}')
 
+          echo "HTTP status code: $http_code"
+          echo "Response body:"
+          cat response.txt || true
+
+          if [ "$http_code" -ge 400 ]; then
+            echo "Power Automate call failed with HTTP $http_code"
+            exit 1
+          fi
+
+          echo "Power Automate call success."
