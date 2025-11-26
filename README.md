@@ -24,9 +24,9 @@ hello-bank/
 └── README.md                   # 本文件（Root）
 ```
 
-- [FRONTEND-README]()。
+- [FRONTEND-README](/frontend/hello-bank-frontend-README.md)。
 
-- [BACKEND-README]()。
+- [BACKEND-README](/backend/hello-bank-backend-README.md)。
 
 ---
 
