@@ -1,0 +1,61 @@
+name: After Copilot Review - Notify PowerAutomate
+
+on:
+  pull_request_review:
+    types: [submitted]
+
+jobs:
+  notify_when_copilot_review:
+    runs-on: ubuntu-latest
+    permissions:
+      pull-requests: read
+      contents: read
+
+    steps:
+      - name: Log review info
+        run: |
+          echo "Reviewer: ${{ github.event.review.user.login }}"
+          echo "State:    ${{ github.event.review.state }}"
+          echo "PR:       #${{ github.event.pull_request.number }}"
+
+      # 只要 Copilot 的 review
+      - name: Skip if not Copilot
+        if: contains(github.event.review.user.login, 'copilot') == false
+        run: |
+          echo "Not Copilot. Skip."
+          exit 0
+
+      # 決定 AIReviewResult (PASS / WITH_WARNINGS / FAIL)
+      - name: Determine result
+        id: result
+        run: |
+          STATE="${{ github.event.review.state }}"
+
+          if [ "$STATE" = "approved" ]; then
+            RESULT="PASS"
+          elif [ "$STATE" = "changes_requested" ]; then
+            RESULT="FAIL"
+          else
+            RESULT="WITH_WARNINGS"
+          fi
+
+          echo "AIReviewResult = $RESULT"
+          echo "result=$RESULT" >> $GITHUB_OUTPUT
+
+      # 🔔 發送通知到 Power Automate
+      - name: Send to Power Automate
+        run: |
+          curl -X POST \
+            "https://1b7a8edc5919e129918f3a91fcca3b.8d.environment.api.powerplatform.com/powerautomate/automations/direct/workflows/7e7d8059a4924061bb2f64e120cf0a77/triggers/manual/paths/invoke?api-version=1&sp=%2Ftriggers%2Fmanual%2Frun&sv=1.0&sig=qSfraBDihydqfKtyzcP9upu6jf-kMP0gwptF_8VSx4U" \
+            -H "Content-Type: application/json" \
+            -H "x-api-key: a8d9f3e2-xyz-1234567890abcdef" \
+            -d '{
+              "MergeRequestID": "'${{ github.event.pull_request.number }}'",
+              "SystemID": "SYS-001",
+              "SubmitterEmail": "-",
+              "SubmitterFullName": "tcb-boshiun",
+              "AIReviewResult": "'"${{ steps.result.outputs.result }}"'",
+              "MergeRequestLink": "'"${{ github.event.pull_request.html_url }}"'"
+            }'
+
+          echo "Notification sent to PowerAutomate ✔"
