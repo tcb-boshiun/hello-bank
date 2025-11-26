@@ -9,7 +9,7 @@ jobs:
     runs-on: ubuntu-latest
 
     # 只在 reviewer 是 Copilot 時觸發（第一次可先註解掉，觀察 event payload）
-    if: github.event.review.user.login == 'github-copilot'
+    # if: github.event.review.user.login == 'github-copilot'
 
     steps:
       - name: Build JSON payload
