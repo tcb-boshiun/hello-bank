@@ -1,7 +1,6 @@
 package com.rick.backend.facade;
 
 import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.NotNull;
 
 /**
  * Hello 模組的外部統一介面（Facade）。
