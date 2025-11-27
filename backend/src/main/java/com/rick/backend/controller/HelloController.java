@@ -21,7 +21,7 @@ public class HelloController {
     }
 
     @PostMapping("/echo")
-    public String echoooo(@RequestBody @NotBlank String message) {
+    public String echo(@RequestBody @NotBlank String message) {
         return this.service.echo(message);
     }
 }

@@ -26,17 +26,36 @@
         <p>如果你有實作 <code>POST /api/echo</code>，可以在這裡測試；沒有也沒關係，可以之後再改 URL。</p>
 
         <textarea
-          v-model="message"
-          placeholder="輸入要傳給後端的訊息，例如：Hello Bank!"
+            v-model="messageEcho1"
+            placeholder="輸入要傳給後端的訊息，例如：Hello Bank!"
         />
-        <button :disabled="loadingEcho" @click="callEcho">
-          {{ loadingEcho ? '傳送中…' : '呼叫 /api/echo' }}
+        <button :disabled="loadingEcho1" @click="callEcho1">
+          {{ loadingEcho1 ? '傳送中…' : '呼叫 /api/echo' }}
         </button>
 
-        <div class="result" v-if="echoResponse || echoError">
+        <div class="result" v-if="echoResponse1 || echoError1">
           <h3>回應結果</h3>
-          <p v-if="echoError" class="error">{{ echoError }}</p>
-          <pre v-else>{{ echoResponse }}</pre>
+          <p v-if="echoError1" class="error">{{ echoError1 }}</p>
+          <pre v-else>{{ echoResponse1 }}</pre>
+        </div>
+      </section>
+
+      <section class="card">
+        <h2>傳送簡單訊息（POST /api/echo2）</h2>
+        <p>如果你有實作 <code>POST /api/echo2</code>，可以在這裡測試；沒有也沒關係，可以之後再改 URL。</p>
+
+        <textarea
+            v-model="messageEcho2"
+            placeholder="輸入要傳給後端的訊息，例如：Hi Bank!"
+        />
+        <button :disabled="loadingEcho2" @click="callEcho2">
+          {{ loadingEcho2 ? '傳送中…' : '呼叫 /api/echo2' }}
+        </button>
+
+        <div class="result" v-if="echoResponse2 || echoError2">
+          <h3>回應結果</h3>
+          <p v-if="echoError2" class="error">{{ echoError2 }}</p>
+          <pre v-else>{{ echoResponse2 }}</pre>
         </div>
       </section>
     </main>
@@ -50,10 +69,17 @@ const loading = ref(false)
 const responseText = ref('')
 const error = ref('')
 
-const message = ref('')
-const loadingEcho = ref(false)
-const echoResponse = ref('')
-const echoError = ref('')
+// 第一個 echo 區塊狀態 (/api/echo)
+const messageEcho1 = ref('')
+const loadingEcho1 = ref(false)
+const echoResponse1 = ref('')
+const echoError1 = ref('')
+
+// 第二個 echo 區塊狀態 (/api/echo2)
+const messageEcho2 = ref('')
+const loadingEcho2 = ref(false)
+const echoResponse2 = ref('')
+const echoError2 = ref('')
 
 async function callBackend() {
   loading.value = true
@@ -64,28 +90,26 @@ async function callBackend() {
     if (!res.ok) {
       throw new Error(`HTTP ${res.status}`)
     }
-
-    // 嘗試用 text 讀，若是 JSON 也會顯示字串內容
     const text = await res.text()
     responseText.value = text
   } catch (e) {
-    error.value = '呼叫 /api/hello 失敗：' + e.message
+    error.value = '呼叫 /api/hello 失敗：' + (e instanceof Error ? e.message : String(e))
   } finally {
     loading.value = false
   }
 }
 
-async function callEcho() {
-  loadingEcho.value = true
-  echoError.value = ''
-  echoResponse.value = ''
+async function callEcho1() {
+  loadingEcho1.value = true
+  echoError1.value = ''
+  echoResponse1.value = ''
   try {
     const res = await fetch('/api/echo', {
       method: 'POST',
       headers: {
         'Content-Type': 'text/plain;charset=utf-8'
       },
-      body: message.value
+      body: messageEcho1.value
     })
 
     if (!res.ok) {
@@ -93,11 +117,37 @@ async function callEcho() {
     }
 
     const text = await res.text()
-    echoResponse.value = text
+    echoResponse1.value = text
   } catch (e) {
-    echoError.value = '呼叫 /api/echo 失敗：' + e.message
+    echoError1.value = '呼叫 /api/echo 失敗：' + (e instanceof Error ? e.message : String(e))
   } finally {
-    loadingEcho.value = false
+    loadingEcho1.value = false
+  }
+}
+
+async function callEcho2() {
+  loadingEcho2.value = true
+  echoError2.value = ''
+  echoResponse2.value = ''
+  try {
+    const res = await fetch('/api/echo2', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'text/plain;charset=utf-8'
+      },
+      body: messageEcho2.value
+    })
+
+    if (!res.ok) {
+      throw new Error(`HTTP ${res.status}`)
+    }
+
+    const text = await res.text()
+    echoResponse2.value = text
+  } catch (e) {
+    echoError2.value = '呼叫 /api/echo2 失敗：' + (e instanceof Error ? e.message : String(e))
+  } finally {
+    loadingEcho2.value = false
   }
 }
 </script>
@@ -197,4 +247,3 @@ pre {
   font-weight: 500;
 }
 </style>
-
