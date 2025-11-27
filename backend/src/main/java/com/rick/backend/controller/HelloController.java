@@ -1,6 +1,8 @@
 package com.rick.backend.controller;
 
 import com.rick.backend.service.HelloService;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
@@ -18,7 +20,7 @@ public class HelloController {
     }
 
     @PostMapping("/echo")
-    public String echo(@RequestBody String message) {
+    public String echo(@RequestBody @NotBlank String message) {
         return this.service.echo(message);
     }
 }
