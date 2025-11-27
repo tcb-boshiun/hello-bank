@@ -1,8 +1,11 @@
 package com.rick.backend.service;
 
 import com.rick.backend.facade.HelloFacade;
+import jakarta.validation.constraints.NotBlank;
 import org.springframework.stereotype.Service;
+import org.springframework.validation.annotation.Validated;
 
+@Validated
 @Service
 public class HelloService implements HelloFacade {
 
@@ -10,7 +13,7 @@ public class HelloService implements HelloFacade {
         return "Hello, here is Hello-Bank!";
     }
 
-    public String echo(String message) {
+    public String echo(@NotBlank String message) {
         return "You sent: " + message;
     }
 }
