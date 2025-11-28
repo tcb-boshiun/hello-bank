@@ -1,19 +1,22 @@
 package com.rick.backend.service;
 
 import com.rick.backend.facade.HelloFacade;
-import jakarta.validation.constraints.NotBlank;
 import org.springframework.stereotype.Service;
-import org.springframework.validation.annotation.Validated;
 
-@Validated
+import java.util.Optional;
+
 @Service
 public class HelloService implements HelloFacade {
 
+    @Override
     public String hello() {
-        return "Hello, here is Hello-Bank!";
+        return "This is Hello-Bank!";
     }
 
-    public String echo(@NotBlank String message) {
-        return "You sent: " + message;
+    @Override
+    public String echo(String message) {
+        return Optional.ofNullable(message)
+                .filter(s -> !s.isBlank())
+                .orElse("您有權保持緘默!");
     }
 }
