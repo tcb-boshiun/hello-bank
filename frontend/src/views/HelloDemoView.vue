@@ -95,7 +95,7 @@ async function callEcho() {
   }
 }
 
-function show() {
+async function show() {
   if (!text.value) {
     echoError.value = "請先輸入文字";
     return;
@@ -115,7 +115,7 @@ function show() {
   }
 }
 
-function hide() {
+async function hide() {
   if (!text.value) {
     echoError.value = "請先輸入文字";
     return;
