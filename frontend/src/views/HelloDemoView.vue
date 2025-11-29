@@ -96,10 +96,43 @@ async function callEcho() {
 }
 
 function show() {
-  callEcho();
+  if (!text.value) {
+    echoError.value = "請先輸入文字";
+    return;
+  }
+  echoLoading.value = true;
+  echoError.value = "";
+  try {
+    const res = await http.post("/api/echo", text.value, {
+      headers: {"Content-Type": "text/plain"}
+    });
+    echo.value = res.data;
+  } catch (e) {
+    console.error(e);
+    echoError.value = "呼叫失敗";
+  } finally {
+    echoLoading.value = false;
+  }
 }
 
 function hide() {
+  if (!text.value) {
+    echoError.value = "請先輸入文字";
+    return;
+  }
+  echoLoading.value = true;
+  echoError.value = "";
+  try {
+    const res = await http.post("/api/echo", text.value, {
+      headers: {"Content-Type": "text/plain"}
+    });
+    echo.value = res.data;
+  } catch (e) {
+    console.error(e);
+    echoError.value = "呼叫失敗";
+  } finally {
+    echoLoading.value = false;
+  }
   echo.value = "*".repeat(echo.value.length);
 }
 </script>
