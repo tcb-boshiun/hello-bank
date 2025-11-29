@@ -83,7 +83,7 @@ async function callEcho() {
   echoLoading.value = true;
   echoError.value = "";
   try {
-    const res = await http.post("/api/echo", text.value, {
+    const res = await http.post("/api/echo/v2", text.value, {
       headers: {"Content-Type": "text/plain"}
     });
     echo.value = res.data;
@@ -103,7 +103,7 @@ async function show() {
   echoLoading.value = true;
   echoError.value = "";
   try {
-    const res = await http.post("/api/echo", text.value, {
+    const res = await http.post("/api/echo/v2", text.value, {
       headers: {"Content-Type": "text/plain"}
     });
     echo.value = res.data;
