@@ -83,7 +83,7 @@ async function callEcho() {
   echoLoading.value = true;
   echoError.value = "";
   try {
-    const res = await http.post("/api/echo", text.value, {
+    const res = await http.post("/api/echo/v2", text.value, {
       headers: {"Content-Type": "text/plain"}
     });
     echo.value = res.data;
@@ -95,7 +95,7 @@ async function callEcho() {
   }
 }
 
-function show() {
+async function show() {
   if (!text.value) {
     echoError.value = "請先輸入文字";
     return;
@@ -103,7 +103,7 @@ function show() {
   echoLoading.value = true;
   echoError.value = "";
   try {
-    const res = await http.post("/api/echo", text.value, {
+    const res = await http.post("/api/echo/v2", text.value, {
       headers: {"Content-Type": "text/plain"}
     });
     echo.value = res.data;
@@ -115,7 +115,7 @@ function show() {
   }
 }
 
-function hide() {
+async function hide() {
   if (!text.value) {
     echoError.value = "請先輸入文字";
     return;
