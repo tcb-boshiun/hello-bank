@@ -1,0 +1,3 @@
+[submodule ".github/tcb-copilot-org-global-instructions"]
+	path = .github/tcb-copilot-org-global-instructions
+	url = https://github.com/tcb-boshiun/tcb-copilot-org-global-instructions
