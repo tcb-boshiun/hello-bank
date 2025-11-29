@@ -1,18 +1,35 @@
 <template>
   <div class="layout-root">
     <header class="header">
-      <div><h1>Hello Bank</h1></div>
+      <div class="header-title">
+        <h1 style="font-size:18px; margin:0;">Hello Bank</h1>
+        <span class="header-title-badge">Demo</span>
+      </div>
       <div class="header-right">
-        <span v-if="userAct">Hi, {{ userAct }}</span>
-        <button @click="logout">登出</button>
+        <span>Hi, {{ userName || "尊敬的客人" }}</span>
+        <button
+          v-if="isLogin"
+          class="btn secondary"
+          @click="logout"
+        >
+          登出
+        </button>
+        <button
+          v-else
+          class="btn secondary"
+          @click="goLogin"
+        >
+          登入
+        </button>
       </div>
     </header>
 
     <div class="body">
       <nav class="sidebar">
-        <router-link to="/profile">個人資料</router-link>
-        <router-link to="/profile/edit">修改資料</router-link>
-        <router-link to="/hello-demo">Hello 功能測試</router-link>
+        <div class="nav-section-title">主要功能</div>
+        <router-link to="/hello-demo" class="nav-link">Hello Demo</router-link>
+        <div class="nav-section-title">會員</div>
+        <router-link to="/profile" class="nav-link">會員中心</router-link>
       </nav>
 
       <main class="content">
@@ -23,31 +40,40 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from "vue";
+import { ref, onMounted, computed } from "vue";
 import { useRouter } from "vue-router";
 import http from "../api/http";
 
 const router = useRouter();
 const userAct = ref("");
+const userName = ref("");
+
+const isLogin = computed(() => !!localStorage.getItem("token"));
+
+function syncUserFromStorage() {
+  userAct.value = localStorage.getItem("userAct") || "";
+  userName.value = localStorage.getItem("userName") || "";
+}
 
 onMounted(() => {
-  userAct.value = localStorage.getItem("userAct") || "";
+  syncUserFromStorage();
 });
 
 async function logout() {
   try {
     await http.post("/api/auth/logout");
-  } catch {}
+  } catch (e) {
+    console.error(e);
+  }
   localStorage.removeItem("token");
   localStorage.removeItem("userAct");
+  localStorage.removeItem("userName");
+  userAct.value = "";
+  userName.value = "";
+  router.push("/login");
+}
+
+function goLogin() {
   router.push("/login");
 }
 </script>
-
-<style scoped>
-.layout-root { display: flex; flex-direction: column; height: 100vh; }
-.header { height: 56px; background:#1e40af; color:white; display:flex; justify-content:space-between; padding:0 16px; align-items:center;}
-.body { flex:1; display:flex; }
-.sidebar { width:180px; background:#eee; display:flex; flex-direction:column; padding:8px;}
-.content { flex:1; padding:16px;}
-</style>

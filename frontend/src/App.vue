@@ -4,10 +4,3 @@
 
 <script setup>
 </script>
-
-<style>
-body {
-  margin: 0;
-  font-family: system-ui, sans-serif;
-}
-</style>

@@ -16,11 +16,11 @@ public class DataLoader implements CommandLineRunner {
     public void run(String... args) {
         if (repo.count() == 0) {
             repo.save(create("A123456789", "Rick", "rick",
-                    "@1111", "0912345678", "rick@mail.com"));
+                    "123", "0912345678", "rick@mail.com"));
             repo.save(create("B987654321", "Amy", "amy",
-                    "@2222", "0922345678", "amy@mail.com"));
+                    "456", "0922345678", "amy@mail.com"));
             repo.save(create("F224466880", "John", "john",
-                    "@3333", "0932345678", "john@mail.com"));
+                    "789", "0932345678", "john@mail.com"));
         }
     }
 

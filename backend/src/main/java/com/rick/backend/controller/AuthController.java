@@ -10,6 +10,7 @@ import com.rick.backend.untils.PwdUtil;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
 
@@ -48,7 +49,7 @@ public class AuthController {
 
         User saved = userRepository.save(user);
 
-        // 🔹 註冊成功就發一顆 token（等於自動登入）
+        // 註冊成功就發一顆 token（等於自動登入）
         String token = tokenService.generateToken(saved.getUserAct());
 
         return new LoginRs(
@@ -76,7 +77,7 @@ public class AuthController {
             throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "帳號或密碼錯誤");
         }
 
-        // 🔹 登入成功發 token
+        // 登入成功發 token
         String token = tokenService.generateToken(user.getUserAct());
 
         // 回傳使用者資訊 + token
@@ -89,5 +90,21 @@ public class AuthController {
                 user.getUserMail(),
                 user.getUserAddress()
         );
+    }
+
+    /**
+     * 登出 (logout)
+     * 前端只要呼叫 POST /api/auth/logout
+     * Axios 會自動帶 Authorization: Bearer <token>
+     */
+    @PostMapping("/logout")
+    public ResponseEntity<Void> logout(
+            @RequestHeader(name = "Authorization", required = false) String authHeader
+    ) {
+        if (authHeader != null && authHeader.startsWith("Bearer ")) {
+            String token = authHeader.substring(7); // 去掉 "Bearer "
+            tokenService.invalidate(token);
+        }
+        return ResponseEntity.ok().build();
     }
 }
