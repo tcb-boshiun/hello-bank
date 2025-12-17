@@ -1,1 +1,0 @@
-提醒：前端（frontend/src/views/HelloDemoView.vue 等）仍有多處直接呼叫 /api/echo，且 UI 按鈕標示與測試流程也尚未更新。如本 PR 合併後，/api/echo 即不存在，會導致前端相關操作全部失效。建議務必同步更新前端呼叫與相關文案，或先預留兼容處理，避免前後端斷鏈。
