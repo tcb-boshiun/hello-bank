@@ -56,7 +56,7 @@ public class HelloController {
 
         return formatWithUser(userOpt, base, "Hello, %s! %s");
     }
-
+~~~~~~~
     // ----------------------------------------------------
     // POST /api/echo/v2
     // 同樣允許空 body
