@@ -57,23 +57,6 @@ public class HelloController {
         return formatWithUser(userOpt, base, "Hello, %s! %s");
     }
 
-    // ----------------------------------------------------
-    // POST /api/echo
-    // body 可為空、可不傳
-    // 未登入：直接回 echo(message)
-    // 已登入：回 "{name} said: {echo(message)}"
-    // ----------------------------------------------------
-    @PostMapping("/echo")
-    public String echo(
-            @RequestHeader(value = "Authorization", required = false) String auth,
-            @RequestBody(required = false) String body) {
-
-        String message = Optional.ofNullable(body).orElse(""); // null → ""
-        String base = helloService.echo(message);
-        Optional<User> userOpt = getUser(auth);
-
-        return formatWithUser(userOpt, base, "%s said: %s");
-    }
 
     // ----------------------------------------------------
     // POST /api/echo/v2
