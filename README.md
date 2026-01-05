@@ -1,15 +1,12 @@
 # Hello Bank — Fullstack Example (Spring Boot + Vue 3)
 
-Hello Bank 是一個前後端分離的示範專案，前端使用 **Vue 3 + Vite**，後端使用 **Spring Boot 3 (Java)**。 
+本專案是一個示範專案，用於展示：
 
-此專案作為：
+- PR Automatic Code Review by AI
+  - GitHub Copilot
+  - CodeRabbit
 
-- GitHub Copilot
-  - [Automatic Code Review](https://docs.github.com/en/copilot/how-tos/use-copilot-agents/request-a-code-review/configure-automatic-review)
-  - [Custom Instructions](https://docs.github.com/en/copilot/how-tos/configure-custom-instructions/add-personal-instructions)
-  - [Unit Tests AutoGen]()
-- (TODO) Docker Compose
-- (TODO) Power Automate Integration
+- Seamless M365 Integration with Power Automate
 
 ---
 
