@@ -1,0 +1,99 @@
+version: 1
+
+review:
+  behavior:
+    review_scope: "full"
+    enable_cross_file_analysis: true
+    enable_repository_context: true
+    summarize_findings: true
+
+  commenting_style:
+    tone: "engineering-review"
+    require_explanations: true
+    require_actionable_suggestions: true
+    reference_code_sections: true
+
+  focus_areas:
+    - cross_file_impact
+    - api_and_contract_changes
+    - risk_and_edge_cases
+    - readability_and_maintainability
+
+  ignore:
+    - trivial_formatting
+    - minor_lint
+    - cosmetic_changes
+
+  output_preferences:
+    group_related_comments: true
+    avoid_duplicate_comments: true
+    prefer_summary_over_noise: true
+
+  suggestions:
+    provide_refactor_examples: true
+    include_rationale_in_feedback: true
+    mention_impacted_modules_on_change: true
+
+  # --------------------------------------------------
+  # Path-based review policies（依前後端路徑套用）
+  # --------------------------------------------------
+  path_overrides:
+
+    # =========================
+    # Frontend (Vue3 / Vite)
+    # =========================
+    - paths:
+        - "frontend/**"
+      focus_areas:
+        - api_usage_consistency
+        - null_and_undefined_safety
+        - state_management_consistency
+        - ui_behavior_and_edge_cases
+        - coupling_between_view_and_data
+      required_checks:
+        - "Verify API call matches backend response contract"
+        - "Identify potential undefined / null access"
+        - "Ensure API failure has fallback / error handling"
+        - "Check loading / empty state switching logic"
+        - "Flag business logic leaking into UI layer"
+      flag_patterns:
+        - "magic_string_in_ui"
+        - "inline_business_logic"
+        - "scattered_api_calls"
+      severity_mapping:
+        major:
+          - inconsistent_api_field_usage
+          - risky_null_access
+          - duplicated_state_logic
+        minor:
+          - naming_consistency
+          - refactor_candidates
+
+    # =========================
+    # Backend (Spring Boot 3)
+    # =========================
+    - paths:
+        - "backend/**"
+      focus_areas:
+        - api_contract_stability
+        - dto_and_response_structure
+        - null_case_and_boundary_conditions
+        - exception_handling_consistency
+        - controller_service_layer_boundary
+        - transaction_and_side_effect_safety
+      required_checks:
+        - "Detect API path / parameter / response contract changes"
+        - "Verify DTO / response structure updates impact callers"
+        - "Identify Null Case / NPE risk"
+        - "Validate boundary / edge case handling"
+        - "Review exception propagation & error semantics"
+        - "Check controller vs service responsibility separation"
+      severity_mapping:
+        critical:
+          - breaking_api_change
+          - inconsistent_response_contract
+          - data_integrity_risk
+        major:
+          - hidden_side_effects
+          - missing_boundary_case
+          - inconsistent_exception_behavior
