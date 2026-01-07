@@ -1,91 +1,67 @@
-# hello-bank Copilot Instructions  
-**version: 1.0 — project-scope only**
+# hello-bank Copilot Instructions
 
-These instructions apply to all Copilot usage in this repository  
-(code completion, chat, and PR review).
+version: 1.1 — project-scope only
 
----
+## 專案結構（Project Structure）
 
-# 1. 專案結構（Project Structure）
+hello-bank 採用前後端分離架構。
 
-## Backend — `backend/**`
-- Spring Boot 3 + Java 17
-- REST API（例如 `/api/hello`）
-- 分層建議：controller → service → repository
-- 回傳資料常為 JSON 物件或字串
+### 前端
 
-Copilot 在後端 PR Review 時必須：
-- 檢查 API 路徑是否有變更  
-- 檢查 DTO / 回傳結構是否有變更  
-- 檢查是否有可能 NPE / null case  
-- 檢查錯誤處理是否合理  
+##### Frontend — `/frontend/**`
 
-## Frontend — `front/**`
-- Demo 前端，呼叫 `/api/hello` 顯示結果
-- 未來可能演進成 Vue3/Vite
+- 框架與技術棧：
+   - Framework：Vue 3（Vite）
+   - Language：TypeScript
+   - Markup / Style：HTML、CSS
 
-Copilot 在前端 PR Review 時必須：
-- 檢查是否正確呼叫後端 API  
-- 檢查是否依賴某欄位造成 undefined/null  
-- 檢查 API failure 時畫面 fallback 是否合理  
+- 職責界定（Frontend Responsibility）：
+   - 呼叫 Backend API 並進行資料展示
+   - 負責 View Rendering 與互動行為
+   - 不應承擔：
+      - 業務規則判斷
+      - 核心運算流程
+      - 資料庫或系統流程邏輯
 
----
+- Frontend PR Review — Copilot MUST 執行下列檢核：
+   - 是否正確呼叫後端 API，且與回傳欄位對應一致
+   - 是否存在依賴 undefined / null 欄位之風險
+   - 是否具備：
+      - API error handling
+      - fallback / empty state 處理
+      - loading 狀態切換
+   - API 呼叫是否集中管理（避免散落於多處）
+   - UI 層是否避免：
+      - magic string
+      - 過度耦合資料物件
+      - inline business logic
 
-# 2. PR Review 應檢查的重點
+### Backend — `/backend/**`
 
-## 2.1 Breaking Changes（最高優先）
-Copilot MUST 檢查：
-- API 路徑是否改動  
-- Request / Response 結構是否變更  
-- 回傳欄位名稱是否調整  
+- 框架與技術棧：
+   - Framework：Spring Boot 3
+   - Language：Java 17
 
-若有變更 → 必須提醒可能影響前端／其他呼叫端。
+- 職責界定（Frontend Responsibility）：
+   - 提供 REST API 服務
+   - 實作業務邏輯與流程控制
+   - 負責資料存取與交易流程
+   - 定義並維護：
+      - DTO / Response 結構
+      - 錯誤處理規範
+      - 回傳資料一致性
 
----
-
-## 2.2 Null / Edge Case
-Backend:
-- 是否可能回傳 null / 空值造成 NPE  
-- 是否需要加上防呆或預設值  
-
-Frontend:
-- 是否可能取用不存在的欄位  
-- 是否有處理 API error（避免畫面壞掉）  
-
----
-
-## 2.3 Coding Structure
-Backend:
-- controller 不應塞業務邏輯  
-- service 不應直接回傳 entity 給 controller  
-- naming clarity & readability  
-
-Frontend:
-- API 呼叫集中管理（避免散亂）  
-- 避免硬編 UI magic string  
-
----
-
-# 3. PR Review 回覆格式
-
-Copilot MUST：
-
-1. 使用繁體中文  
-2. 開頭加上：  
-   `Using hello-bank instructions v1.0`
-3. 對每個問題提供：
-   - 類型（Breaking Change / Null Case / Structure / etc.）  
-   - 檔案路徑（若可推斷）  
-   - 行號（若可推斷）  
-   - 問題描述  
-   - 建議修正版程式碼（code block）  
-
----
-
-# 4. 最終判定（必須擇一）
-
-PR Review 回覆最後一行必須是：
-
-- `完美`  
-- `通過`  
-- `不通過`
+- Backend PR Review — Copilot MUST 執行下列檢核：
+   - 是否涉及：
+      - API 路徑 / 參數 / 回傳格式異動
+   - 是否存在：
+      - DTO / 回傳資料結構調整
+   - 是否可能產生：
+      - Null Case
+      - NPE 風險
+      - 邊界條件未處理情境
+   - 例外處理流程是否：
+      - 具一致性
+      - 具可預期性
+      - 能正確回傳錯誤語意
+   - controller / service 分層是否符合責任界線
